@@ -36,11 +36,11 @@ class block_course_custom_fields extends block_base {
                     'all'             => true,
                     'site'            => true,
                     'course'          => true,
-                    'course-category' => false,
-                    'mod'             => false,
+                    'course-category' => true,
+                    'mod'             => true,
                     'my'              => false,
                     'tag'             => false,
-                    'admin'           => false,            
+                    'admin'           => false,              
             );
     }
     
@@ -56,8 +56,8 @@ class block_course_custom_fields extends block_base {
     
     function get_content() {
         
-        global $CFG, $OUTPUT, $DB;
-        
+        global $CFG, $OUTPUT, $DB, $PAGE;
+        $PAGE->requires->js('/blocks/course_custom_fields/lib.js');
         $contextID = $this->page->context->id;
                 
         $blockID = $this->instance->id;
@@ -74,8 +74,10 @@ class block_course_custom_fields extends block_base {
         
         if($_SERVER['HTTP_HOST'] == 'moodle-dev.eos.arz.oeaw.ac.at'){
             $searchUrl = 'https://clarin.oeaw.ac.at/moodle-dev/search/index.php';
+        } else if ( $_SERVER['HTTP_HOST'] == "https://teach-dariah.hephaistos.arz.oeaw.ac.at/") {    
+            $searchUrl = 'https://teach-dariah.hephaistos.arz.oeaw.ac.at/search/index.php';            
         } else {
-            $searchUrl = 'https://clarin.oeaw.ac.at/moodle/search/index.php';            
+            $searchUrl = 'https://teach.dariah.eu/search/index.php';            
         }
         
         $id = $this->page->course->id;
@@ -88,36 +90,48 @@ class block_course_custom_fields extends block_base {
 
         if(empty($data))
         {
-            $this->content->text = 'Course has no custom fields';
+            if(!isset($this->content)) { 
+                $this->content = new stdClass();
+            }
+            @$this->content->text = 'Course has no custom fields';
             return $this->content->text;
         }
         
         $data = json_decode(json_encode($data), True);
 
-        $this->content->text = '<div style="display: table; width:100%; margin: 5px;" >'; 
+        if(!isset($this->content)) {
+            $this->content = new stdClass();
+            @$this->content->text = '';
+        }
+        if(!isset($this->content->text)) {
+            $this->content->text = '';
+        }
+        $this->content->text = '<p class="text-center font-weight-bold"><a href="#" class="show_hide_ccf_block">Show All</a></p>';
+        $this->content->text .= '<div style="display: table; width:100%; margin: 5px;" class="course_custom_fields_div">'; 
         foreach ($data as $key => $value) {
                         
-            if($value["datatype"] == "datetime"){
-                
+            if($value["datatype"] == "datetime"){                
                 $valueF = date('Y-m-d H:i:s', $value["data"]); 
-            } elseif($value["datatype"] == "menu"){
-                
+            } elseif($value["datatype"] == "menu"){                
                 $param = $value["data"];                
                 $param1 = explode("\n", $value["param1"]);                
                 $valueF = $param1[$param];
             }else{
                 $valueF = $value["data"];
             }
-            $this->content->text .= '<div style="display: table-row;" >';
-            $this->content->text .= '<div style="display: table-cell;"><p>'.$key.' : </p></div>';
-            $this->content->text .= '<div style="display: table-cell;font-weight:bold;"><p>'.$valueF.'</p></div>'; 
+            /*$this->content->text .= '<div style="display: table-row;" >';*/
+            $this->content->text .= '<div class="custom-meta-key-field" >'
+                    . '<p class="ccm-kfh">'.$key.' </p>';
+                $this->content->text .= '<p class="ccm-kft">'.$valueF.'</p>';
             $this->content->text .= '</div>';
             
         }
         
         
-        $this->content->text .=' <br> <a href="'.$searchUrl.'">Search</a>';
+        //$this->content->text .=' <br> <a href="'.$searchUrl.'"><b>Search</b></a>';
         $this->content->text .= '</div>';
+        
+        
         
         //return $this->content->text;
         
